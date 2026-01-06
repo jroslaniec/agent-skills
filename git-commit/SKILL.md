@@ -1,7 +1,6 @@
 ---
 name: git-commit
 description: Create git commits with appropriate commit messages. Use when the user asks to commit, create a commit, write a commit message, or mentions "commit" in the context of saving changes to git.
-model: claude-haiku-4-5-20251001
 ---
 
 # Git Commit

@@ -1,7 +1,6 @@
 ---
 name: github-pr
 description: Create GitHub pull requests using gh CLI with automatic stacked PR detection. Use when the user asks to create a PR, open a pull request, make a PR, or mentions creating/opening a pull request on GitHub.
-model: claude-haiku-4-5-20251001
 ---
 
 # GitHub Pull Request
