@@ -5,98 +5,87 @@ description: Create GitHub pull requests using gh CLI with automatic stacked PR 
 
 # GitHub Pull Request
 
-This skill creates pull requests using the GitHub CLI (`gh`) with intelligent detection of stacked PRs (PRs built on top of other branches).
+Create pull requests using GitHub CLI with stacked PR detection.
 
 ## Instructions
 
-## Workflow
+### Step 1: Gather Context
 
-### 1. Detect Stack and Parent Branch
+Run the skill's context-gathering script:
 
-- Get current branch: `git rev-parse --abbrev-ref HEAD`
-- Get commit history: `git log --oneline -20` (get more if needed to find branch refs)
-- Parse the output to find parent branch:
-  - First line shows current branch with `HEAD`
-  - Look at subsequent commits for branch references in parentheses
-  - First branch that is NOT current branch and NOT `main`/`origin/main` = parent branch
-  - If parent branch is `main` or `origin/main` → **Normal PR**
-  - If parent branch is something else → **Stacked PR**
+```bash
+./gather-pr-context.sh
+```
 
-### 2. Check for Parent PR (Stacked PR only)
+### Step 2: Analyze Context
 
-- Check if parent branch has open PR: `gh pr list --head <parent-branch> --state open --json number,url`
-- Store parent PR number and URL if exists
+From the script output, determine:
 
-### 3. Prepare PR Context
+**Stacked vs Normal PR:**
 
-**For Normal PR:**
+- Parse `git log --oneline --decorate` for branch refs in parentheses
+- First branch NOT current and NOT `main`/`origin/main` = parent branch
+- Parent is `main` → Normal PR
+- Parent is other branch → Stacked PR
 
-- Target branch: `main`
-- Review commits: `git log --oneline origin/main..HEAD`
-- Check diff: `git diff origin/main...HEAD`
+**Push status:**
 
-**For Stacked PR:**
+- `git log origin/<branch>..HEAD` empty → pushed ✓
+- Shows commits → need to push first
 
-- Target branch: `<parent-branch>`
-- Review commits: `git log --oneline <parent-branch>..HEAD` (only commits in THIS branch)
-- Check diff: `git diff <parent-branch>...HEAD` (only changes in THIS branch)
+**Existing PR:**
 
-### 4. Before Creating PR
+- `gh pr list` returns data → PR exists, offer to update
+- Empty → create new PR
 
-- `git status` - verify working tree is clean
-- `git push -u origin HEAD` - push branch if not already pushed
-- **VERIFY PUSH**: Check that commits are on remote with `git log origin/$(git rev-parse --abbrev-ref HEAD)..HEAD`
-  - If output is empty → commits are pushed ✓
-  - If output shows commits → push failed or incomplete, DO NOT proceed
-- `gh pr list --head $(git rev-parse --abbrev-ref HEAD)` - check if PR already exists
+### Step 3: Push if Needed
 
-### 5. Create PR
+```bash
+git push -u origin HEAD
+```
 
-- Look for `.github/pull_request_template.md` for PR template structure
-- Use ticket number from branch name (e.g., PAT-123) as PR title prefix if present
-- Keep PR description short and proportional to code changes - only fill necessary template sections
-- Create PR in draft mode by default unless explicitly requested otherwise
-- **For Normal PR**: `gh pr create --draft --base main`
-- **For Stacked PR**: `gh pr create --draft --base <parent-branch>`
+### Step 4: Create PR
 
-### 6. Output Format
+**Normal PR:**
 
-**For Normal PR:**
+```bash
+gh pr create --draft --base main --title "title" --body "body"
+```
+
+**Stacked PR:**
+
+```bash
+gh pr create --draft --base <parent-branch> --title "title" --body "body"
+```
+
+**Guidelines:**
+
+- Use ticket number from branch name as title prefix (e.g., PAT-123)
+- Keep description short and proportional to changes
+- For stacked PRs, describe only THIS branch's changes
+- Create in draft mode unless explicitly requested otherwise
+
+### Step 5: Output
+
+**Normal PR:**
 
 ```
 Created PR
-* Merge : `<current-branch>` into `main`
-* PR URL: <new-pr-url>
+* Merge : `<branch>` into `main`
+* PR URL: <url>
 ```
 
-**For Stacked PR (with parent PR):**
-
-```
-📚 Stacked PR 📚
-* Merge    : `<current-branch>` into `<parent-branch>`
-* New PR   : <new-pr-url>
-* Parent PR: <parent-pr-url>
-```
-
-**For Stacked PR (no parent PR):**
+**Stacked PR:**
 
 ```
 📚 Stacked PR 📚
-* Merge    : `<current-branch>` into `<parent-branch>`
-* New PR   : <new-pr-url>
-* Parent PR: ⚠️ No Parent PR ⚠️
+* Merge    : `<branch>` into `<parent>`
+* New PR   : <url>
+* Parent PR: <parent-url or "⚠️ No Parent PR">
 ```
-
-## Important Notes
-
-- Include ticket number in title if branch follows PAT-123 pattern
-- Keep description concise - focus on what and why, not how
-- Only fill template sections that add value
-- For stacked PRs, describe only the changes in THIS branch, not the entire stack
-- Git log limit: Default to 20 commits, fetch more if no branch refs found
 
 ## Requirements
 
-- GitHub CLI (`gh`) must be installed and authenticated
-- Git repository must have a remote configured
-- User must have push access to the repository
+- GitHub CLI (`gh`) installed and authenticated
+- Git remote configured
+- Push access to repository
