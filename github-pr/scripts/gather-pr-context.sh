@@ -1,6 +1,10 @@
 #!/bin/bash
 # Gather context for GitHub PR decisions
 
+echo '$ pwd'
+pwd
+
+echo ''
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 echo '$ git rev-parse --abbrev-ref HEAD'

@@ -1,6 +1,10 @@
 #!/bin/bash
 # Gather context for git commit decisions
 
+echo '$ pwd'
+pwd
+
+echo ''
 echo '$ git diff --cached --name-only'
 git diff --cached --name-only
 
