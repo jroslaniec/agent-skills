@@ -7,10 +7,10 @@ description: Create git commits with appropriate commit messages. Use when the u
 
 ## Step 1: Gather Context
 
-Run the skill's context-gathering script from the repository root:
+Run the skill's context-gathering script:
 
 ```bash
-scripts/gather-commit-context.sh
+<skill-location-dir>/scripts/gather-commit-context.sh
 ```
 
 The script outputs the current working directory first. Verify you are in the correct repository before proceeding.
