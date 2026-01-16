@@ -179,7 +179,7 @@ ______________________________________________________________________
 Run the verification script to ensure valid structure:
 
 ```bash
-<skill-location-dir>/scripts/verify-tasks.py spec/prd.json
+<skill-location-dir>/scripts/verify-tasks spec/prd.json
 ```
 
 ______________________________________________________________________

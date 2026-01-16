@@ -18,7 +18,7 @@ Check if `spec/README.md` exists for general project information (skip if alread
 Run the script to determine the next PRD number:
 
 ```bash
-<skill-location-dir>/scripts/get-next-prd-number.sh .
+<skill-location-dir>/scripts/get-next-prd-number .
 ```
 
 ## Step 3: Interview the User
