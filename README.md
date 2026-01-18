@@ -52,6 +52,22 @@ This interviews you and creates `spec/NNNN-prd-feature-name.md`.
 
 This creates `spec/NNNN-tasks.json` with executable tasks.
 
+### The spec/ Directory
+
+The workflow uses a `spec/` directory to organize PRDs, tasks, and loop state:
+
+```
+spec/
+├── NNNN-prd-feature-name.md   # PRD document (goals, user stories, requirements)
+├── NNNN-tasks.json            # Executable tasks derived from PRD
+├── prompt.md                  # Instructions for the agent (created by init)
+└── loop/
+    ├── progress.txt           # Append-only log of completed work
+    └── patterns.md            # Reusable patterns discovered during implementation
+```
+
+The agent reads the PRD and tasks, implements one task per iteration, logs progress, and marks tasks as complete.
+
 **3. Initialize and run the loop:**
 
 ```bash
@@ -90,8 +106,8 @@ agent-loop -n 5
 # Target specific PRD
 agent-loop --prd 8
 
-# Use different agent
-agent-loop -- codex --dangerously-skip-permissions
+# Use different agent (Codex)
+agent-loop -- codex --dangerously-bypass-approvals-and-sandbox
 ```
 
 The loop continues until all tasks pass (`passes: true`) or the iteration limit is reached.
