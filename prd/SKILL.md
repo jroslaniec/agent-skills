@@ -39,6 +39,7 @@ Conduct a discussion to understand the feature. Ask questions to gather:
 - It's OK to have multiple rounds of questions
 - Listen actively and ask follow-up questions
 - Clarify ambiguities before writing the PRD
+- **Test data handling:** If the user provides sample/test data (e.g., API responses, database records, file contents) for manual testing or validation purposes, do NOT include this data in the PRD. Real data shared during the interview should not end up in unit tests, test fixtures, or any persisted test files. The PRD should describe *what* to test and *how*, but not contain actual test data that could be copied into automated tests.
 
 ## Step 4: Write the PRD
 
@@ -86,6 +87,8 @@ What we are explicitly NOT doing:
 3. [Another action]
 4. **Expected:** [What should happen]
 
+**Documentation:** [Yes/No - Does this story require README or other docs to be updated?]
+
 ### US-002: [Next User Story]
 
 ...
@@ -112,6 +115,8 @@ Requirements must be:
 | NFR-003 | [e.g., Must be accessible via keyboard navigation] | |
 
 ## Testing Plan
+
+> **Note:** Do not include real/live test data in this section. Describe what to test and how, but do not embed actual data samples that the user shared during the interview. Real data should not be persisted in unit tests or test fixtures.
 
 ### Testing Strategy
 
@@ -147,6 +152,7 @@ Verify all items before saving the PRD:
 - [ ] Non-goals explicitly state what is out of scope
 - [ ] All user stories have the As/I want/So that format
 - [ ] All user stories have numbered verification steps
+- [ ] All user stories specify whether documentation updates are required
 - [ ] All functional requirements are numbered (FR-XXX)
 - [ ] All functional requirements are unambiguous and testable
 - [ ] Non-functional requirements are included (themes, performance, accessibility)

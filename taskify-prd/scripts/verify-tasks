@@ -5,7 +5,7 @@
 #     "pydantic>=2.0",
 # ]
 # ///
-"""Verify prd.json structure and content."""
+"""Verify NNNN-tasks.json structure and content."""
 
 import json
 import sys
@@ -14,12 +14,12 @@ from pathlib import Path
 from pydantic import BaseModel, Field, field_validator
 
 
-class UserStory(BaseModel):
-    """A single user story / task."""
+class Task(BaseModel):
+    """A single task (user story, bug fix, enhancement, etc.)."""
 
-    id: str = Field(description="Story ID, e.g., US-001")
+    id: str = Field(description="Task ID, e.g., US-001, BUG-001, TASK-001")
     title: str = Field(description="Short task title")
-    description: str = Field(description="As a... I want... so that...")
+    description: str = Field(description="Task description (user story format or plain)")
     acceptanceCriteria: list[str] = Field(  # noqa: N815
         description="List of verifiable criteria", min_length=1
     )
@@ -30,8 +30,11 @@ class UserStory(BaseModel):
     @field_validator("id")
     @classmethod
     def validate_id(cls, v: str) -> str:
-        if not v.startswith("US-"):
-            raise ValueError(f"ID must start with 'US-', got: {v}")
+        valid_prefixes = ("US-", "BUG-", "FIX-", "TASK-", "ENH-")
+        if not any(v.startswith(prefix) for prefix in valid_prefixes):
+            raise ValueError(
+                f"ID must start with one of {valid_prefixes}, got: {v}"
+            )
         return v
 
     @field_validator("acceptanceCriteria")
@@ -49,14 +52,19 @@ class UserStory(BaseModel):
 
 
 class TasksFile(BaseModel):
-    """The prd.json structure."""
+    """The NNNN-tasks.json structure."""
 
-    prd: str = Field(description="Source PRD name (without .md)")
+    prd: str = Field(description="Source PRD filename (with .md extension)")
     branchName: str = Field(description="Git branch name for this feature")  # noqa: N815
     description: str = Field(description="Feature description")
-    userStories: list[UserStory] = Field(  # noqa: N815
-        description="List of tasks", min_length=1
-    )
+    tasks: list[Task] = Field(description="List of tasks", min_length=1)
+
+    @field_validator("prd")
+    @classmethod
+    def validate_prd(cls, v: str) -> str:
+        if not v.endswith(".md"):
+            raise ValueError(f"PRD field must end with .md, got: {v}")
+        return v
 
     @field_validator("branchName")
     @classmethod
@@ -67,24 +75,22 @@ class TasksFile(BaseModel):
             raise ValueError(f"Branch name should be kebab-case: {v}")
         return v
 
-    @field_validator("userStories")
+    @field_validator("tasks")
     @classmethod
-    def validate_story_order(cls, v: list[UserStory]) -> list[UserStory]:
-        priorities = [s.priority for s in v]
+    def validate_task_order(cls, v: list[Task]) -> list[Task]:
+        priorities = [t.priority for t in v]
         if priorities != sorted(priorities):
-            raise ValueError(
-                f"Stories must be ordered by priority. Got: {priorities}"
-            )
+            raise ValueError(f"Tasks must be ordered by priority. Got: {priorities}")
 
-        ids = [s.id for s in v]
+        ids = [t.id for t in v]
         if len(ids) != len(set(ids)):
-            raise ValueError(f"Duplicate story IDs found: {ids}")
+            raise ValueError(f"Duplicate task IDs found: {ids}")
 
         return v
 
 
 def verify_tasks(file_path: Path) -> bool:
-    """Verify a prd.json file."""
+    """Verify a NNNN-tasks.json file."""
     if not file_path.exists():
         print(f"Error: File not found: {file_path}")
         return False
@@ -97,21 +103,29 @@ def verify_tasks(file_path: Path) -> bool:
         return False
 
     try:
-        tasks = TasksFile(**data)
+        tasks_file = TasksFile(**data)
     except Exception as e:
         print(f"Error: Validation failed: {e}")
         return False
 
+    # Check PRD file exists
+    spec_dir = file_path.parent
+    prd_path = spec_dir / tasks_file.prd
+    if not prd_path.exists():
+        print(f"Error: PRD file not found: {prd_path}")
+        return False
+
     # Summary
-    print(f"PRD: {tasks.prd}")
-    print(f"Branch: {tasks.branchName}")
-    print(f"Stories: {len(tasks.userStories)}")
+    print(f"PRD: {tasks_file.prd}")
+    print(f"PRD file: {prd_path} (exists)")
+    print(f"Branch: {tasks_file.branchName}")
+    print(f"Tasks: {len(tasks_file.tasks)}")
     print()
 
-    for story in tasks.userStories:
-        status = "PASS" if story.passes else "PENDING"
-        print(f"  [{status}] {story.id}: {story.title}")
-        print(f"           Criteria: {len(story.acceptanceCriteria)}")
+    for task in tasks_file.tasks:
+        status = "PASS" if task.passes else "PENDING"
+        print(f"  [{status}] {task.id}: {task.title}")
+        print(f"           Criteria: {len(task.acceptanceCriteria)}")
 
     print()
     print("Validation passed!")
@@ -120,7 +134,7 @@ def verify_tasks(file_path: Path) -> bool:
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print(f"Usage: {sys.argv[0]} <path-to-prd.json>")
+        print(f"Usage: {sys.argv[0]} <path-to-tasks.json>")
         sys.exit(1)
 
     file_path = Path(sys.argv[1])

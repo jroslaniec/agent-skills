@@ -1,0 +1,387 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# ///
+"""
+agent-loop: Run an AI agent in a loop to work through tasks.
+
+Usage:
+    agent-loop                                    # all defaults (latest tasks file)
+    agent-loop -n 5                               # limit to 5 iterations
+    agent-loop --prd 8                            # use spec/0008-tasks.json
+    agent-loop -- claude -p                       # custom agent command
+    agent-loop init                               # create default prompt and loop files
+
+Examples:
+    agent-loop -n 10 --prd 8 -- claude -p --dangerously-skip-permissions
+"""
+
+import argparse
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+DEFAULT_PROMPT = '''\
+# Coding Agent Instructions
+
+You are an autonomous coding agent working on a software project.
+
+## Your Task
+
+Study spec/README.md (if available) and the PRD. The PRD markdown may have more details than the tasks file.
+
+1. Read the tasks at `$TASKS_LOC`
+2. Read the PRD at `$PRD_LOC`
+3. Read `spec/loop/progress.txt` and `spec/loop/patterns.md` to understand prior work and codebase patterns
+4. Check you're on the correct branch from tasks `branchName`. If not, check it out or create from main.
+5. Pick the **highest priority** user story where `passes: false`
+6. Implement that single user story
+7. **Build the project** - the build MUST succeed before proceeding
+8. Run quality checks (typecheck, lint, test - use whatever your project requires)
+9. When appropriate, manually test your implementation using CLI/bash tools to verify it works end-to-end
+10. Update AGENTS.md files if you discover reusable patterns (see below)
+11. **IMPORTANT:** If all checks pass, commit ALL changes using the `git-commit` skill with message: `[Story Title]`
+12. Update the tasks file to set `passes: true` for the completed story
+13. Append your progress to `spec/loop/progress.txt`
+14. Append any reusable patterns to `spec/loop/patterns.md`
+
+## Progress Report Format
+
+APPEND to `spec/loop/progress.txt` (never replace, always append to the end):
+```
+## [Date/Time] - [Story ID]
+- What was implemented
+- Files changed
+- **Learnings for future iterations:**
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+  - Useful context (e.g., "the evaluation panel is in component X")
+---
+```
+
+The learnings section is critical - it helps future iterations avoid repeating mistakes and understand the codebase better.
+
+## Patterns File
+
+APPEND to `spec/loop/patterns.md` (never replace, always append to the end) when you discover **reusable patterns** that future iterations should know:
+
+```
+- Use `sql<number>` template for aggregations
+- Always use `IF NOT EXISTS` for migrations
+- Export types from actions.ts for UI components
+```
+
+Only add patterns that are **general and reusable**, not story-specific details.
+
+## Update AGENTS.md Files
+
+Before committing, check if any edited files have learnings worth preserving in nearby AGENTS.md files:
+
+1. **Identify directories with edited files** - Look at which directories you modified
+2. **Check for existing AGENTS.md** - Look for AGENTS.md in those directories or parent directories
+3. **Add valuable learnings** - If you discovered something future developers/agents should know:
+   - API patterns or conventions specific to that module
+   - Gotchas or non-obvious requirements
+   - Dependencies between files
+   - Testing approaches for that area
+   - Configuration or environment requirements
+
+**Examples of good AGENTS.md additions:**
+- "When modifying X, also update Y to keep them in sync"
+- "This module uses pattern Z for all API calls"
+- "Tests require the dev server running on PORT 3000"
+- "Field names must match the template exactly"
+
+**Do NOT add:**
+- Story-specific implementation details
+- Temporary debugging notes
+- Information already in progress.txt
+
+Only update AGENTS.md if you have **genuinely reusable knowledge** that would help future work in that directory.
+
+## Quality Requirements
+
+- **The project MUST build successfully** - never leave the codebase in a broken state
+- ALL commits must pass your project's quality checks (typecheck, lint, test)
+- When appropriate, manually test your implementation using bash/CLI tools to verify it works as expected (not just unit tests)
+- Do NOT commit broken code
+- Keep changes focused and minimal
+- Follow existing code patterns
+
+## Stop Condition
+
+After completing a user story, check if ALL stories have `passes: true`.
+
+If there are still stories with `passes: false`, end your response normally (another iteration will pick up the next story).
+
+## Important
+
+- Work on ONE story per iteration
+- Commit frequently
+- Keep CI green - **the build must always pass**
+- Read `spec/loop/patterns.md` before starting to understand codebase conventions
+'''
+
+
+def find_tasks_files(spec_dir: Path) -> list[tuple[int, Path]]:
+    """Find all NNNN-tasks.json files. Returns list of (number, path) sorted by number."""
+    pattern = re.compile(r'^(\d{4})-tasks\.json$')
+    results = []
+
+    if not spec_dir.exists():
+        return results
+
+    for f in spec_dir.iterdir():
+        if f.is_file():
+            match = pattern.match(f.name)
+            if match:
+                num = int(match.group(1))
+                results.append((num, f))
+
+    return sorted(results, key=lambda x: x[0])
+
+
+def find_tasks_file(spec_dir: Path, prd_num: int | None) -> Path | None:
+    """Find tasks file by number or return latest."""
+    tasks_files = find_tasks_files(spec_dir)
+
+    if not tasks_files:
+        return None
+
+    if prd_num is not None:
+        for num, path in tasks_files:
+            if num == prd_num:
+                return path
+        return None
+
+    # Return latest (highest number)
+    return tasks_files[-1][1]
+
+
+def get_prd_path(spec_dir: Path, tasks_data: dict) -> Path | None:
+    """Get PRD path from tasks data."""
+    prd_filename = tasks_data.get("prd")
+    if not prd_filename:
+        return None
+    return spec_dir / prd_filename
+
+
+def render_prompt(prompt: str, tasks_path: Path, prd_path: Path) -> str:
+    """Replace placeholders in prompt with actual paths."""
+    result = prompt.replace("$TASKS_LOC", str(tasks_path))
+    result = result.replace("$PRD_LOC", str(prd_path))
+    return result
+
+
+def count_tasks(tasks_path: Path) -> tuple[int, int]:
+    """Count passing and non-passing tasks. Returns (passing, total)."""
+    if not tasks_path.exists():
+        print(f"Error: Tasks file not found: {tasks_path}", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        data = json.loads(tasks_path.read_text())
+    except json.JSONDecodeError as e:
+        print(f"Error: Invalid JSON in {tasks_path}: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    tasks = data.get("tasks", [])
+    total = len(tasks)
+    passing = sum(1 for task in tasks if task.get("passes", False))
+
+    return passing, total
+
+
+def run_agent(agent_cmd: list[str], prompt: str) -> int:
+    """Run the agent with the prompt piped to stdin. Returns exit code."""
+    result = subprocess.run(
+        agent_cmd,
+        input=prompt,
+        text=True,
+    )
+    return result.returncode
+
+
+def cmd_init(args: argparse.Namespace) -> None:
+    """Initialize spec directory with default prompt and loop files."""
+    spec_dir = Path("spec")
+    loop_dir = spec_dir / "loop"
+    prompt_path = spec_dir / "prompt.md"
+    progress_path = loop_dir / "progress.txt"
+    patterns_path = loop_dir / "patterns.md"
+
+    # Check if prompt.md already exists
+    if prompt_path.exists():
+        print(f"Error: {prompt_path} already exists. Aborting.", file=sys.stderr)
+        sys.exit(1)
+
+    # Create directories
+    spec_dir.mkdir(exist_ok=True)
+    loop_dir.mkdir(exist_ok=True)
+
+    # Try to find tasks file and render prompt with actual paths
+    prd_num = getattr(args, "prd", None)
+    tasks_path = find_tasks_file(spec_dir, prd_num)
+
+    prompt_content = DEFAULT_PROMPT
+    if tasks_path is not None:
+        try:
+            tasks_data = json.loads(tasks_path.read_text())
+            prd_path = get_prd_path(spec_dir, tasks_data)
+            if prd_path is not None and prd_path.exists():
+                prompt_content = render_prompt(DEFAULT_PROMPT, tasks_path, prd_path)
+                print(f"Found tasks: {tasks_path}")
+                print(f"Found PRD: {prd_path}")
+            else:
+                print(f"Warning: Tasks file found but PRD not found, keeping placeholders")
+        except (json.JSONDecodeError, KeyError):
+            print(f"Warning: Could not parse {tasks_path}, keeping placeholders")
+    else:
+        print("No tasks file found, keeping placeholders in prompt")
+        print("After creating PRD and tasks, re-run 'agent-loop init' or edit spec/prompt.md manually")
+
+    # Write files
+    prompt_path.write_text(prompt_content)
+    print(f"Created {prompt_path}")
+
+    if not progress_path.exists():
+        progress_path.write_text("")
+        print(f"Created {progress_path}")
+    else:
+        print(f"Skipped {progress_path} (already exists)")
+
+    if not patterns_path.exists():
+        patterns_path.write_text("")
+        print(f"Created {patterns_path}")
+    else:
+        print(f"Skipped {patterns_path} (already exists)")
+
+    print("\nInitialization complete.")
+
+
+def cmd_run(args: argparse.Namespace) -> None:
+    """Main loop command."""
+    spec_dir = Path("spec")
+
+    # Find tasks file
+    tasks_path = find_tasks_file(spec_dir, args.prd)
+    if tasks_path is None:
+        if args.prd is not None:
+            print(f"Error: No tasks file found for PRD {args.prd:04d}", file=sys.stderr)
+        else:
+            print("Error: No tasks files found in spec/", file=sys.stderr)
+            print("Run 'agent-loop init' to set up the spec directory.", file=sys.stderr)
+        sys.exit(1)
+
+    # Load tasks data to get PRD path
+    try:
+        tasks_data = json.loads(tasks_path.read_text())
+    except json.JSONDecodeError as e:
+        print(f"Error: Invalid JSON in {tasks_path}: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    prd_path = get_prd_path(spec_dir, tasks_data)
+    if prd_path is None:
+        print(f"Error: No 'prd' field in {tasks_path}", file=sys.stderr)
+        sys.exit(1)
+
+    if not prd_path.exists():
+        print(f"Error: PRD file not found: {prd_path}", file=sys.stderr)
+        sys.exit(1)
+
+    # Read and render prompt
+    prompt_path = spec_dir / "prompt.md"
+    if prompt_path.exists():
+        prompt_template = prompt_path.read_text()
+    else:
+        prompt_template = DEFAULT_PROMPT
+
+    prompt = render_prompt(prompt_template, tasks_path, prd_path)
+
+    print(f"Tasks: {tasks_path}")
+    print(f"PRD: {prd_path}")
+
+    n = args.n
+    iteration = 0
+
+    while n > 0:
+        passing, total = count_tasks(tasks_path)
+        remaining = total - passing
+
+        if remaining == 0:
+            print(f"\nAll {total} tasks passing. Done!")
+            break
+
+        iteration += 1
+        print(f"\n[{iteration}/{args.n}] {remaining} tasks remaining (passes: {passing}/{total})")
+        print(f"Running: {' '.join(args.agent_cmd)}")
+        print("-" * 40, flush=True)
+
+        exit_code = run_agent(args.agent_cmd, prompt)
+
+        if exit_code != 0:
+            print(f"\nAgent exited with code {exit_code}. Aborting.", file=sys.stderr)
+            sys.exit(exit_code)
+
+        n -= 1
+
+    # Final status
+    passing, total = count_tasks(tasks_path)
+    remaining = total - passing
+    print(f"\nFinished. Final status: {passing}/{total} tasks passing, {remaining} remaining.")
+
+    if remaining > 0:
+        print(f"Reached iteration limit ({args.n}).")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Run an AI agent in a loop to work through tasks.",
+        usage="agent-loop [init | [-n N] [--prd NUM] [-- AGENT_CMD...]]",
+    )
+
+    subparsers = parser.add_subparsers(dest="command")
+
+    # init subcommand
+    init_parser = subparsers.add_parser("init", help="Initialize spec directory with default files")
+    init_parser.add_argument(
+        "--prd",
+        type=int,
+        default=None,
+        metavar="NUM",
+        help="PRD number to use for paths (default: latest)",
+    )
+
+    # run arguments (default command)
+    parser.add_argument(
+        "-n",
+        type=int,
+        default=10,
+        help="Maximum number of iterations (default: 10)",
+    )
+    parser.add_argument(
+        "--prd",
+        type=int,
+        default=None,
+        metavar="NUM",
+        help="PRD number to use (default: latest)",
+    )
+
+    # Handle -- separator for agent command
+    if "--" in sys.argv:
+        idx = sys.argv.index("--")
+        args = parser.parse_args(sys.argv[1:idx])
+        args.agent_cmd = sys.argv[idx + 1:]
+    else:
+        args = parser.parse_args()
+        args.agent_cmd = ["claude", "-p", "--dangerously-skip-permissions"]
+
+    if args.command == "init":
+        cmd_init(args)
+    else:
+        cmd_run(args)
+
+
+if __name__ == "__main__":
+    main()
