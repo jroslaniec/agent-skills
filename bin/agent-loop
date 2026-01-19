@@ -40,7 +40,7 @@ Study spec/README.md (if available) and the PRD. The PRD markdown may have more 
 6. Implement that single user story
 7. **Build the project** - the build MUST succeed before proceeding
 8. Run quality checks (typecheck, lint, test - use whatever your project requires)
-9. When appropriate, manually test your implementation using CLI/bash tools to verify it works end-to-end
+9. When appropriate, manually test your implementation to verify it works end-to-end
 10. Update AGENTS.md files if you discover reusable patterns (see below)
 11. **IMPORTANT:** If all checks pass, commit ALL changes using the `git-commit` skill with message: `[Story Title]`
 12. Update the tasks file to set `passes: true` for the completed story
@@ -121,6 +121,10 @@ If there are still stories with `passes: false`, end your response normally (ano
 - Commit frequently
 - Keep CI green - **the build must always pass**
 - Read `spec/loop/patterns.md` before starting to understand codebase conventions
+
+## Recommended Agents
+
+Use **curl-tester** when you implement API endpoints - it tests happy paths, edge cases, and error handling using curl.
 '''
 
 
