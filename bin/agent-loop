@@ -37,15 +37,17 @@ Study spec/README.md (if available) and the PRD. The PRD markdown may have more 
 3. Read `spec/loop/progress.txt` and `spec/loop/patterns.md` to understand prior work and codebase patterns
 4. Check you're on the correct branch from tasks `branchName`. If not, check it out or create from main.
 5. Pick the **highest priority** user story where `passes: false`
-6. Implement that single user story
-7. **Build the project** - the build MUST succeed before proceeding
-8. Run quality checks (typecheck, lint, test - use whatever your project requires)
-9. When appropriate, manually test your implementation to verify it works end-to-end
-10. Update AGENTS.md files if you discover reusable patterns (see below)
-11. **IMPORTANT:** If all checks pass, commit ALL changes using the `git-commit` skill with message: `[Story Title]`
-12. Update the tasks file to set `passes: true` for the completed story
-13. Append your progress to `spec/loop/progress.txt`
-14. Append any reusable patterns to `spec/loop/patterns.md`
+6. **Write a high-level todo list** for this story - each entry should mention which agent/skill to use if applicable (see Recommended Agents and Skills section)
+7. Implement that single user story
+8. **Build the project** - the build MUST succeed before proceeding
+9. Run quality checks (typecheck, lint, test - use whatever your project requires)
+10. When appropriate, manually test your implementation using the appropriate agent (e.g., **curl-tester** for APIs)
+11. Update AGENTS.md files if you discover reusable patterns (see below)
+12. Use **docs-updater** agent to ensure documentation is in sync
+13. **IMPORTANT:** If all checks pass, commit ALL changes using the `/commit` skill with message: `[Story Title]`
+14. Update the tasks file to set `passes: true` for the completed story
+15. Append your progress to `spec/loop/progress.txt`
+16. Append any reusable patterns to `spec/loop/patterns.md`
 
 ## Progress Report Format
 
@@ -122,8 +124,12 @@ If there are still stories with `passes: false`, end your response normally (ano
 - Keep CI green - **the build must always pass**
 - Read `spec/loop/patterns.md` before starting to understand codebase conventions
 
-## Recommended Agents
+## Recommended Agents and Skills
 
+### Skills
+- **/commit** - Use for all commits
+
+### Agents
 - **curl-tester** - Use after implementing API endpoints to test happy paths, edge cases, and error handling
 - **docs-updater** - Use after implementing features to ensure documentation stays in sync with code changes
 '''

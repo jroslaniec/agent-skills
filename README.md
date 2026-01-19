@@ -11,7 +11,7 @@ Install using (my) [agent-skill-manager](https://github.com/jroslaniec/agent-ski
 sm add -i git@github.com:jroslaniec/agent-skills.git
 
 # Or enable specific skills
-sm add git@github.com:jroslaniec/agent-skills.git/git-commit
+sm add git@github.com:jroslaniec/agent-skills.git/commit
 sm add git@github.com:jroslaniec/agent-skills.git/github-pr
 sm add git@github.com:jroslaniec/agent-skills.git/git-worktree
 sm add git@github.com:jroslaniec/agent-skills.git/prd
@@ -24,15 +24,22 @@ Skills will be symlinked to your coding agent's config directory (e.g., `~/.clau
 
 | Skill          | Description                                              |
 | -------------- | -------------------------------------------------------- |
-| `git-commit`   | Create git commits with appropriate messages             |
+| `commit`       | Create git commits with appropriate messages             |
 | `github-pr`    | Create GitHub PRs with stacked PR detection              |
 | `git-worktree` | Manage git worktrees and branches                        |
 | `prd`          | Create Product Requirements Documents through interviews |
 | `taskify-prd`  | Convert PRDs to executable task files                    |
 
+## Available Agents
+
+| Agent          | Description                                             |
+| -------------- | ------------------------------------------------------- |
+| `curl-tester`  | Test API endpoints using curl (happy paths, edge cases) |
+| `docs-updater` | Update documentation to reflect code changes            |
+
 ## Agent Loop (Ralph Loop)
 
-This repo includes `bin/agent_loop` - an implementation of the [Ralph Loop](https://ghuntley.com/ralph/) pattern for autonomous task execution.
+This repo includes `bin/agent-loop` - an implementation of the [Ralph Loop](https://ghuntley.com/ralph/) pattern for autonomous task execution.
 
 ### Workflow
 

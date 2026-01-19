@@ -1,5 +1,5 @@
 ---
-name: git-commit
+name: commit
 description: Create git commits with appropriate commit messages. Use when the user asks to commit, create a commit, write a commit message, or mentions "commit" in the context of saving changes to git.
 ---
 
