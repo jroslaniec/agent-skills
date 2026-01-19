@@ -32,10 +32,11 @@ Skills will be symlinked to your coding agent's config directory (e.g., `~/.clau
 
 ## Available Agents
 
-| Agent          | Description                                             |
-| -------------- | ------------------------------------------------------- |
-| `curl-tester`  | Test API endpoints using curl (happy paths, edge cases) |
-| `docs-updater` | Update documentation to reflect code changes            |
+| Agent            | Description                                             |
+| ---------------- | ------------------------------------------------------- |
+| `code-review-py` | Review Python code for quality and best practices       |
+| `curl-tester`    | Test API endpoints using curl (happy paths, edge cases) |
+| `docs-updater`   | Update documentation to reflect code changes            |
 
 ## Agent Loop (Ralph Loop)
 

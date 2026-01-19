@@ -130,6 +130,7 @@ If there are still stories with `passes: false`, end your response normally (ano
 - **/commit** - Use for all commits
 
 ### Agents
+- **code-review-py** - Use after implementing Python code changes to review for quality and best practices before committing
 - **curl-tester** - Use after implementing API endpoints to test happy paths, edge cases, and error handling
 - **docs-updater** - Use after implementing features to ensure documentation stays in sync with code changes
 '''
