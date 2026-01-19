@@ -123,6 +123,8 @@ What we are explicitly NOT doing:
 **I want** [capability]
 **So that** [benefit]
 
+**Description:** [Detailed explanation of the user story - what the user is trying to accomplish, relevant context, any constraints or considerations, and how this fits into the broader feature]
+
 **Steps to verify:**
 1. [Precondition or setup step]
 2. [Action to take]
@@ -193,6 +195,7 @@ Verify all items before saving the PRD:
 - [ ] Goals are specific and measurable
 - [ ] Non-goals explicitly state what is out of scope
 - [ ] All user stories have the As/I want/So that format
+- [ ] All user stories have a description providing context and details
 - [ ] All user stories have numbered verification steps
 - [ ] All user stories specify whether documentation updates are required
 - [ ] All functional requirements are numbered (FR-XXX)
