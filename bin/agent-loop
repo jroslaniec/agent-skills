@@ -124,7 +124,8 @@ If there are still stories with `passes: false`, end your response normally (ano
 
 ## Recommended Agents
 
-Use **curl-tester** when you implement API endpoints - it tests happy paths, edge cases, and error handling using curl.
+- **curl-tester** - Use after implementing API endpoints to test happy paths, edge cases, and error handling
+- **docs-updater** - Use after implementing features to ensure documentation stays in sync with code changes
 '''
 
 
