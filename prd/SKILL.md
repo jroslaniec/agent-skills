@@ -9,9 +9,24 @@ Create PRDs by interviewing the user and documenting requirements in a structure
 
 **Important: Do NOT start implementing. Just create the PRD.**
 
-## Step 1: Gather Project Context
+## Step 1: Explore the Project
 
-Check if `spec/README.md` exists for general project information (skip if already loaded in conversation):
+Before asking questions, thoroughly explore the codebase to understand:
+
+1. **Project structure and architecture** - Examine directory layout, key modules, and how components connect
+1. **Existing patterns** - Look at how similar features are implemented (UI patterns, API patterns, data models)
+1. **Technology stack** - Identify frameworks, libraries, and tools already in use
+1. **Related code** - Find existing code that relates to the feature being requested
+1. **Documentation** - Check `spec/README.md`, existing PRDs in `spec/`, and any relevant docs
+
+**Use the Task tool with `subagent_type=Explore`** to investigate the codebase. Spend adequate time understanding the project before interviewing.
+
+This exploration ensures you:
+
+- Don't ask questions the codebase already answers
+- Understand constraints and patterns to follow
+- Can ask informed questions about tradeoffs
+- Propose solutions that fit the existing architecture
 
 ## Step 2: Get Next PRD Number
 
@@ -23,19 +38,46 @@ Run the script to determine the next PRD number:
 
 ## Step 3: Interview the User
 
-Conduct a discussion to understand the feature. Ask questions to gather:
+After exploring the codebase, conduct a focused discussion about **decisions you cannot infer from the code**.
 
-- What is the feature? What problem does it solve?
-- Who are the users?
-- What are the goals? What are explicitly NOT goals?
-- What are the main user flows/stories?
-- What are the functional requirements?
-- Any non-functional requirements? (performance, accessibility, theme support, etc.)
-- How should this be tested?
+### What NOT to ask (learn from exploration instead):
+
+- Basic project structure or tech stack
+- How existing features work
+- Current patterns or conventions
+- What files/components exist
+
+### What TO ask (requires human input):
+
+**Tradeoffs and design decisions:**
+
+- When there are multiple valid approaches, which does the user prefer and why?
+- What should happen in ambiguous edge cases?
+- How should this feature prioritize competing concerns (e.g., simplicity vs flexibility, performance vs maintainability)?
+
+**Scope and boundaries:**
+
+- What are the explicit non-goals?
+- What's the MVP vs nice-to-have?
+- Are there constraints not visible in the code (timeline, team expertise, external dependencies)?
+
+**Business logic and UX:**
+
+- User-facing copy, labels, or messaging
+- Error handling preferences (fail silently vs surface errors)
+- Behavior in edge cases that require product decisions
+
+**Requirements that need human judgment:**
+
+- Performance thresholds
+- Accessibility requirements beyond baseline
+- Integration points with external systems
 
 **Rules for interviewing:**
 
 - Ask **no more than 3-5 questions at a time**
+- **Start by sharing what you learned** from exploration - this shows the user you've done homework and lets them correct misunderstandings
+- Focus questions on decisions, not facts
 - It's OK to have multiple rounds of questions
 - Listen actively and ask follow-up questions
 - Clarify ambiguities before writing the PRD
