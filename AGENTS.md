@@ -9,6 +9,7 @@ Each skill lives in its own directory with a `SKILL.md` file and optional `scrip
 - `git-commit/` - Create git commits with appropriate messages
 - `github-pr/` - Create GitHub PRs with stacked PR detection
 - `git-worktree/` - Manage git worktrees and branches
+- `pytest-unit/` - Write pytest unit tests for Python code changes
 
 ## Adding Skills
 

@@ -41,7 +41,7 @@ Study spec/README.md (if available) and the PRD. The PRD markdown may have more 
 7. Implement that single user story
 8. **Build the project** - the build MUST succeed before proceeding
 9. Run quality checks (typecheck, lint, test - use whatever your project requires)
-10. When appropriate, manually test your implementation using the appropriate agent (e.g., **curl-tester** for APIs)
+10. **For API implementations:** Use the **curl-tester** agent to test endpoints (happy paths, edge cases, error handling)
 11. Update AGENTS.md files if you discover reusable patterns (see below)
 12. Use **docs-updater** agent to ensure documentation is in sync
 13. **IMPORTANT:** If all checks pass, commit ALL changes using the `/commit` skill with message: `[Story Title]`
@@ -128,6 +128,7 @@ If there are still stories with `passes: false`, end your response normally (ano
 
 ### Skills
 - **/commit** - Use for all commits
+- **/pytest-unit** - Use when writing pytest tests for Python code changes
 
 ### Agents
 - **code-review-py** - Use after implementing Python code changes to review for quality and best practices before committing
