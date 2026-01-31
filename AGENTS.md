@@ -1,23 +1,40 @@
-# Agent Skills Repository
+# Agent Instructions
 
-Personal collection of agent skills following the [Agent Skills](https://agentskills.io) open standard.
+Personal collection of Agent Skills and Subagents following the [Agent Skills](https://agentskills.io) standard. Managed through `agent-skill-manager`; enabling a skill/subagent creates symlinks in each registered coding agent config directory.
 
-## Structure
+## Repository Layout
 
-Each skill lives in its own directory with a `SKILL.md` file and optional `scripts/` folder:
+```
+repo/
+├── <skill-name>/
+│   ├── SKILL.md        # required; includes name/description frontmatter
+│   └── scripts/…       # optional helpers referenced via <skill-location-dir>
+├── <agent-name>/
+│   └── AGENT.md        # required instructions + metadata for subagents
+├── bin/agent-loop      # Ralph Loop helper CLI
+└── docs/…              # helper guides (README, project-pytest-guidelines, …)
+```
 
-- `git-commit/` - Create git commits with appropriate messages
-- `github-pr/` - Create GitHub PRs with stacked PR detection
-- `git-worktree/` - Manage git worktrees and branches
-- `pytest-unit/` - Write pytest unit tests for Python code changes
+### Skills
 
-## Adding Skills
+- directories use lowercase with hyphens
+- include `SKILL.md` frontmatter (`name`, `description`)
+- optional `scripts/` folder for shared shell helpers
+- no AI attribution in generated commits/PRs
 
-1. Create a directory matching the skill name (lowercase, hyphens only)
-1. Add a `SKILL.md` with required frontmatter (`name`, `description`)
-1. Put helper scripts in `scripts/` if needed
+### Subagents
 
-## Notes
+- mirror the skill layout but with `AGENT.md`
+- document purpose, workflows, and setup expectations
+- surfaced automatically by `agent-skill-manager` as "subagents"
 
-- Skills must not include AI attribution in outputs (commits, PRs, etc.)
-- Use `<skill-location-dir>` placeholder for paths to skill scripts
+## Adding or Updating Entries
+
+1. create directory matching the skill/subagent name
+1. add the required instruction file (`SKILL.md` or `AGENT.md`)
+1. place supporting scripts under `scripts/` and reference them via `<skill-location-dir>`
+1. follow associated docs/tests (e.g., `project-pytest-guidelines.md`) when relevant
+
+## Agent Loop Helpers
+
+This repo ships `bin/agent-loop`, an implementation of the [Ralph Loop](https://ghuntley.com/ralph/) workflow used with the `prd` and `taskify-prd` skills (see README). Use it to bootstrap autonomous runs against the `spec/` directory produced by those skills.

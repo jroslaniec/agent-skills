@@ -16,6 +16,7 @@ sm add git@github.com:jroslaniec/agent-skills.git/github-pr
 sm add git@github.com:jroslaniec/agent-skills.git/git-worktree
 sm add git@github.com:jroslaniec/agent-skills.git/prd
 sm add git@github.com:jroslaniec/agent-skills.git/pytest-unit
+sm add git@github.com:jroslaniec/agent-skills.git/skill-new
 sm add git@github.com:jroslaniec/agent-skills.git/taskify-prd
 ```
 
@@ -30,6 +31,7 @@ Skills will be symlinked to your coding agent's config directory (e.g., `~/.clau
 | `git-worktree` | Manage git worktrees and branches                        |
 | `prd`          | Create Product Requirements Documents through interviews |
 | `pytest-unit`  | Write pytest unit tests for Python code changes          |
+| `skill-new`    | Create or update Agent Skills for any coding agent       |
 | `taskify-prd`  | Convert PRDs to executable task files                    |
 
 ## Available Agents
